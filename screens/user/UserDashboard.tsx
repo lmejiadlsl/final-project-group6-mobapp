@@ -10,6 +10,7 @@ import {
   SafeAreaView 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+ 
 
 const UserDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState('All Pets');
@@ -22,7 +23,7 @@ const UserDashboard = () => {
       name: 'Max',
       breed: 'Golden Retriever',
       age: '2 months old',
-      image: require (''), // You'll need to add these images
+      image: require ('../../assets/Golden-Retriever-puppy.jpg'), // You'll need to add these images
       available: true,
     },
     {
@@ -30,7 +31,7 @@ const UserDashboard = () => {
       name: 'Luna',
       breed: 'Siamese Cat',
       age: '3 months old',
-      image: require ('../assets/pets/Golden-Retriever-puppy.jpg'),
+      image: require ('../../assets/Golden-Retriever-puppy.jpg'),
       available: true,
     },
   ];
