@@ -2,6 +2,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import { db } from '../../contexts/AuthContext'; // adjust path as needed
+import { doc, getDoc } from 'firebase/firestore';
 
 type UserRole = 'buyer' | 'seller' | 'admin';
 
@@ -34,36 +36,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       newErrors.email = 'Email format is invalid';
     }
 
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (selectedRole === 'admin' && (email !== 'admin' || password !== 'admin123')) {
-      newErrors.password = 'Invalid admin credentials';
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
 
-  const handleLogin = () => {
-    if (validateInputs()) {
-      setIsLoading(true);
-     
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        if (selectedRole === 'admin' && email === 'admin' && password === 'admin123') {
-          Alert.alert('Success', 'Admin logged in successfully');
-        
-        } else if (selectedRole !== 'admin') {
-          Alert.alert('Success', `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} logged in successfully`);
-        navigation.replace('Home');
-        } else {
-          setErrors({ password: 'Invalid admin credentials' });
+const handleLogin = async () => {
+  if (!validateInputs()) return;
+
+  setIsLoading(true);
+
+  try {
+
+    console.log('Logging in with:', { email, selectedRole, password });
+    const docRef = doc(db, selectedRole, email);
+    const docSnap = await getDoc(docRef);
+
+    setIsLoading(false);
+
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+
+      if (userData.password === password && userData.role === selectedRole) {
+        Alert.alert('Success', `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} logged in successfully`);
+
+        // Navigate based on role - for now all go to "Home"
+        if (selectedRole === 'buyer') {
+          navigation.replace('Home');
+        } else if (selectedRole === 'seller' || selectedRole === 'admin') {
+          // You can change this later to navigate to different stacks/screens
+          navigation.replace('Home');
         }
-      }, 1500);
+
+      } else {
+        setErrors({ password: 'Invalid credentials for selected role' });
+      }
+    } else {
+      setErrors({ email: 'Account not found' });
     }
-  };
+  } catch (error) {
+    setIsLoading(false);
+    Alert.alert('Error', 'Something went wrong. Please try again.');
+    console.error('Login error:', error);
+  }
+};
+
 
   return (
     <KeyboardAvoidingView
