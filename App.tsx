@@ -4,8 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'react-native';
 import ForgotPasswordScreen from './screens/auth/ForgotPasswordScreen';
 import LoginScreen from './screens/auth/LoginScreen';
-import RegisterScreen from './screens/auth/RegisterScreen';
 import AppNavigator from './navigation/AppNavigator';
+import SignupScreen from './screens/auth/RegisterScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -22,7 +22,7 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Register" component={SignupScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="App" component={AppNavigator} />
       </Stack.Navigator>

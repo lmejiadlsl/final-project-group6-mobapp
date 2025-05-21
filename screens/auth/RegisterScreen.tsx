@@ -1,22 +1,25 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 
-type UserRole = 'buyer' | 'seller';
+type RootStackParamList = {
+  Login: undefined;
+  Register: { initialRole?: 'buyer' | 'seller' | 'admin' };
+  ForgotPassword: undefined;
+  App: { role: 'buyer' | 'seller' | 'admin' };
+};
+
+type UserRole = 'buyer' | 'seller' | 'admin';
 
 type SignupScreenProps = {
-  navigation: StackNavigationProp<any>;
-  route: {
-    params?: {
-      initialRole?: UserRole;
-    };
-  };
+  navigation: StackNavigationProp<RootStackParamList, 'Register'>;
+  route: RouteProp<RootStackParamList, 'Register'>;
 };
 
 const SignupScreen: React.FC<SignupScreenProps> = ({ navigation, route }) => {
   const initialRole = route.params?.initialRole || 'buyer';
-  
   
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
   const [fullName, setFullName] = useState<string>('');
@@ -33,14 +36,11 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation, route }) => {
     confirmPassword?: string;
   }>({});
 
- 
   const handleRoleSelection = (role: UserRole) => {
     setSelectedRole(role);
-   
     setErrors({});
   };
 
- 
   const validateInputs = (): boolean => {
     const newErrors: {
       fullName?: string;
@@ -78,8 +78,6 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation, route }) => {
   const handleSignup = () => {
     if (validateInputs()) {
       setIsLoading(true);
-      
-    
       setTimeout(() => {
         setIsLoading(false);
         Alert.alert(
@@ -253,7 +251,6 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation, route }) => {
     </KeyboardAvoidingView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
