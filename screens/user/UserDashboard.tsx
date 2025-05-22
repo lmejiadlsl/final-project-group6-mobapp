@@ -15,6 +15,23 @@ type Pet = {
   available?: boolean;
 };
 
+type AdoptionApplication = {
+  id: string;
+  petId: string;
+  petName: string;
+  applicantName: string;
+  email: string;
+  phone: string;
+  address: string;
+  experience: string;
+  livingSituation: string;
+  hasYard: boolean;
+  otherPets: string;
+  reasonForAdoption: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+};
+
 const PetBuyerScreen: React.FC = () => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [showAdoptionForm, setShowAdoptionForm] = useState(false);
@@ -52,36 +69,61 @@ const PetBuyerScreen: React.FC = () => {
     setShowAdoptionForm(true);
   };
 
-  const handleSubmitApplication = () => {
+  const handleSubmitApplication = async () => {
     if (!applicationForm.applicantName || !applicationForm.email || !applicationForm.phone) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
-  
-    Alert.alert(
-      'Application Submitted!',
-      `Thank you for your interest in adopting ${applicationForm.petName}. The shelter will contact you within 24-48 hours.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            setShowAdoptionForm(false);
-            setApplicationForm({
-              applicantName: '',
-              email: '',
-              phone: '',
-              address: '',
-              experience: '',
-              livingSituation: 'house',
-              hasYard: false,
-              otherPets: '',
-              reasonForAdoption: ''
-            });
+    if (!selectedPet) return;
+
+    try {
+      const newApplication: AdoptionApplication = {
+        id: Date.now().toString(),
+        petId: selectedPet.id,
+        petName: selectedPet.name,
+        ...applicationForm,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+
+      
+      const existingApplications = await AsyncStorage.getItem('applications');
+      let applications = existingApplications ? JSON.parse(existingApplications) : [];
+      
+     
+      applications.push(newApplication);
+      
+      
+      await AsyncStorage.setItem('applications', JSON.stringify(applications));
+
+      Alert.alert(
+        'Application Submitted!',
+        `Thank you for your interest in adopting ${selectedPet.name}. The shelter will contact you within 24-48 hours.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setShowAdoptionForm(false);
+              setApplicationForm({
+                applicantName: '',
+                email: '',
+                phone: '',
+                address: '',
+                experience: '',
+                livingSituation: 'house',
+                hasYard: false,
+                otherPets: '',
+                reasonForAdoption: ''
+              });
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      console.error('Failed to save application:', error);
+      Alert.alert('Error', 'Failed to submit application. Please try again.');
+    }
   };
 
   const renderAdoptionFormModal = () => (
@@ -353,7 +395,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-
   modalContainer: {
     flex: 1,
     backgroundColor: '#f6f4ff',

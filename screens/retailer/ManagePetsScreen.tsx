@@ -4,7 +4,6 @@ import { Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import PetBuyerScreen from '../user/UserDashboard'; 
 import ProfileScreen from '../user/AccountSettings';
 
 type Pet = {
@@ -19,24 +18,21 @@ type Pet = {
   available?: boolean;
 };
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-};
-
 type AdoptionApplication = {
   id: string;
-  pet: Pet;
-  user: User;
+  petId: string;
+  petName: string;
+  applicantName: string;
+  email: string;
+  phone: string;
+  address: string;
+  experience: string;
+  livingSituation: string;
+  hasYard: boolean;
+  otherPets: string;
+  reasonForAdoption: string;
   status: 'pending' | 'approved' | 'rejected';
-  createdAt: Date;
-  petName?: string;
-  applicantName?: string;
-  email?: string;
-  phone?: string;
-  reasonForAdoption?: string;
+  createdAt: string;
 };
 
 type ScreenMode = 'pets' | 'applications' | 'profile';
@@ -59,18 +55,21 @@ const PetAdoptionManager: React.FC = () => {
   });
 
   useEffect(() => {
-    const loadPets = async () => {
+    const loadData = async () => {
       try {
-        const storedPets = await AsyncStorage.getItem('pets');
-        if (storedPets) {
-          setPets(JSON.parse(storedPets));
-        }
+        const [storedPets, storedApplications] = await Promise.all([
+          AsyncStorage.getItem('pets'),
+          AsyncStorage.getItem('applications')
+        ]);
+        
+        if (storedPets) setPets(JSON.parse(storedPets));
+        if (storedApplications) setApplications(JSON.parse(storedApplications));
       } catch (error) {
-        console.error('Failed to load pets from storage:', error);
+        console.error('Failed to load data:', error);
       }
     };
 
-    loadPets();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -78,7 +77,7 @@ const PetAdoptionManager: React.FC = () => {
       try {
         await AsyncStorage.setItem('pets', JSON.stringify(pets));
       } catch (error) {
-        console.error('Failed to save pets to storage:', error);
+        console.error('Failed to save pets:', error);
       }
     };
 
@@ -124,9 +123,29 @@ const PetAdoptionManager: React.FC = () => {
     );
   };
 
-  const handleApplicationStatus = (id: string, status: 'approved' | 'rejected') => {
-    setApplications(applications.map(app => app.id === id ? { ...app, status } : app));
-    Alert.alert('Success', `Application ${status}`);
+  const handleApplicationStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const updatedApplications = applications.map(app => 
+        app.id === id ? { ...app, status } : app
+      );
+
+      if (status === 'approved') {
+        const application = updatedApplications.find(app => app.id === id);
+        if (application) {
+          setPets(pets.map(p => 
+            p.id === application.petId ? { ...p, available: false } : p
+          ));
+        }
+      }
+
+      await AsyncStorage.setItem('applications', JSON.stringify(updatedApplications));
+      setApplications(updatedApplications);
+      
+      Alert.alert('Success', `Application ${status}`);
+    } catch (error) {
+      console.error('Failed to update application status:', error);
+      Alert.alert('Error', 'Failed to update application status');
+    }
   };
 
   const pickImage = async () => {
@@ -138,7 +157,11 @@ const PetAdoptionManager: React.FC = () => {
     });
 
     if (!result.canceled) {
-      setNewPet({ ...newPet, images: [...newPet.images, result.assets[0].uri] });
+      if (editingPet) {
+        setEditingPet({ ...editingPet, images: [...editingPet.images, result.assets[0].uri] });
+      } else {
+        setNewPet({ ...newPet, images: [...newPet.images, result.assets[0].uri] });
+      }
     }
   };
 
@@ -187,10 +210,12 @@ const PetAdoptionManager: React.FC = () => {
             ) : (
               pets.map((pet) => (
                 <View key={pet.id} style={styles.card}>
-                  <Image
-                    source={{ uri: pet.images[0] || 'https://via.placeholder.com/150' }}
-                    style={styles.image}
-                  />
+                  {pet.images.length > 0 && (
+                    <Image
+                      source={{ uri: pet.images[0] }}
+                      style={styles.image}
+                    />
+                  )}
                   <View style={styles.info}>
                     <Text style={styles.petName}>{pet.name}</Text>
                     <Text style={styles.petDetails}>{pet.breed} • {pet.age} • {pet.type}</Text>
@@ -228,12 +253,16 @@ const PetAdoptionManager: React.FC = () => {
             ) : (
               applications.map((app) => (
                 <View key={app.id} style={styles.card}>
-                  <Text style={styles.petName}>{app.petName || app.pet.name}</Text>
-                  <Text style={styles.applicantInfo}>👤 {app.applicantName || app.user.name}</Text>
-                  <Text style={styles.applicantInfo}>📧 {app.email || app.user.email}</Text>
-                  <Text style={styles.applicantInfo}>📱 {app.phone || app.user.phone}</Text>
+                  <Text style={styles.petName}>{app.petName}</Text>
+                  <Text style={styles.applicantInfo}>👤 {app.applicantName}</Text>
+                  <Text style={styles.applicantInfo}>📧 {app.email}</Text>
+                  <Text style={styles.applicantInfo}>📱 {app.phone}</Text>
+                  {app.address && <Text style={styles.applicantInfo}>🏠 {app.address}</Text>}
                   {app.reasonForAdoption && (
-                    <Text style={styles.applicationReason}>{app.reasonForAdoption}</Text>
+                    <Text style={styles.applicationReason}>
+                      <Text style={{ fontWeight: 'bold' }}>Reason: </Text>
+                      {app.reasonForAdoption}
+                    </Text>
                   )}
                   <View style={[styles.statusTag, 
                     app.status === 'approved' ? styles.approvedTag : 
@@ -242,10 +271,20 @@ const PetAdoptionManager: React.FC = () => {
                   </View>
                   {app.status === 'pending' && (
                     <View style={styles.cardActions}>
-                      <Button mode="contained" onPress={() => handleApplicationStatus(app.id, 'approved')} style={styles.btnApprove}>
+                      <Button 
+                        mode="contained" 
+                        onPress={() => handleApplicationStatus(app.id, 'approved')} 
+                        style={styles.btnApprove}
+                        labelStyle={styles.buttonLabel}
+                      >
                         Approve
                       </Button>
-                      <Button mode="outlined" onPress={() => handleApplicationStatus(app.id, 'rejected')} style={styles.btnReject}>
+                      <Button 
+                        mode="outlined" 
+                        onPress={() => handleApplicationStatus(app.id, 'rejected')} 
+                        style={styles.btnReject}
+                        labelStyle={[styles.buttonLabel, { color: '#F44336' }]}
+                      >
                         Reject
                       </Button>
                     </View>
@@ -305,6 +344,15 @@ const PetAdoptionManager: React.FC = () => {
               <Ionicons name="camera" size={20} color="#fff" />
               <Text style={styles.imageButtonText}>Add Photo</Text>
             </TouchableOpacity>
+            
+            {(editingPet ? editingPet.images : newPet.images).length > 0 && (
+              <ScrollView horizontal style={styles.imagePreviewContainer}>
+                {(editingPet ? editingPet.images : newPet.images).map((uri, index) => (
+                  <Image key={index} source={{ uri }} style={styles.imagePreview} />
+                ))}
+              </ScrollView>
+            )}
+            
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={() => editingPet ? setEditingPet(null) : setIsAddingPet(false)} style={styles.cancelButton}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -418,8 +466,8 @@ const styles = StyleSheet.create({
   applicationReason: {
     fontSize: 14,
     color: '#888',
-    fontStyle: 'italic',
     marginVertical: 8,
+    lineHeight: 20,
   },
   statusContainer: {
     marginTop: 8,
@@ -457,6 +505,18 @@ const styles = StyleSheet.create({
     marginTop: 10,
     gap: 8,
   },
+  buttonLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  btnApprove: {
+    backgroundColor: '#4CAF50',
+    flex: 1,
+  },
+  btnReject: {
+    borderColor: '#F44336',
+    flex: 1,
+  },
   fab: {
     position: 'absolute',
     margin: 16,
@@ -473,14 +533,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-  },
-  btnApprove: {
-    backgroundColor: '#4CAF50',
-    flex: 1,
-  },
-  btnReject: {
-    borderColor: '#F44336',
-    flex: 1,
   },
   modal: {
     position: 'absolute',
@@ -533,6 +585,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  imagePreviewContainer: {
+    marginBottom: 16,
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 8,
   },
   modalActions: {
     flexDirection: 'row',
