@@ -6,6 +6,8 @@ import { View, Text } from 'react-native';
 import UserDashboard from '../screens/user/UserDashboard';
 import ProfileScreen from '../screens/user/AccountSettings'; // Import the new ProfileScreen
 import PetAdoptionManager from '../screens/retailer/ManagePetsScreen';
+import SellerList from '../screens/admin/SellerList';
+import AcceptSeller from '../screens/admin/AcceptSeller';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -40,6 +42,10 @@ const MessagesScreen = () => (
     </Text>
   </View>
 );
+
+
+
+
 
 // Admin Dashboard placeholder
 const AdminDashboard = () => (
@@ -228,6 +234,62 @@ const SellerStack = () => (
   </Stack.Navigator>
 );
 
+const AdminTabs = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap;
+
+          switch (route.name) {
+            case 'Dashboard':
+              iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
+              break;
+            case 'ManageSeller':
+              iconName = focused ? 'person-add' : 'person-add-outline';
+              break;
+            case 'SellerList':
+              iconName = focused ? 'people' : 'people-outline';
+              break;
+            default:
+              iconName = 'help-circle-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#5D3FD3',
+        tabBarInactiveTintColor: '#8E8E93',
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 0,
+          elevation: 15,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          height: 85,
+          paddingBottom: 10,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingTop: 5,
+        },
+      })}
+    >
+      <Tab.Screen name="Dashboard" component={AdminDashboard} />
+      <Tab.Screen name="ManageSeller" component={AcceptSeller} />
+      <Tab.Screen name="SellerList" component={SellerList} />
+    </Tab.Navigator>
+  );
+};
+
+
 // Enhanced Admin Stack
 const AdminStack = () => (
   <Stack.Navigator 
@@ -250,15 +312,10 @@ const AdminStack = () => (
       },
     }}
   >
-    <Stack.Screen 
-      name="AdminDashboard" 
-      component={AdminDashboard}
-      options={{
-        title: 'Admin Dashboard',
-      }}
-    />
+    <Stack.Screen name="AdminTabs" component={AdminTabs} />
   </Stack.Navigator>
 );
+
 
 type AppNavigatorProps = {
   route?: {
