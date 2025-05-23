@@ -15,17 +15,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
  
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('buyer'); // Default to buyer
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const handleRoleSelection = (role: UserRole) => {
     setSelectedRole(role);
-  
     setErrors({});
   };
-
 
   const validateInputs = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
@@ -36,11 +34,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       newErrors.email = 'Email format is invalid';
     }
 
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+// ... (previous imports remain the same)
 
 const handleLogin = async () => {
   if (!validateInputs()) return;
@@ -48,7 +50,6 @@ const handleLogin = async () => {
   setIsLoading(true);
 
   try {
-
     console.log('Logging in with:', { email, selectedRole, password });
     const docRef = doc(db, selectedRole, email);
     const docSnap = await getDoc(docRef);
@@ -61,14 +62,8 @@ const handleLogin = async () => {
       if (userData.password === password && userData.role === selectedRole) {
         Alert.alert('Success', `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} logged in successfully`);
 
-        // Navigate based on role - for now all go to "Home"
-        if (selectedRole === 'buyer') {
-          navigation.replace('Home');
-        } else if (selectedRole === 'seller' || selectedRole === 'admin') {
-          // You can change this later to navigate to different stacks/screens
-          navigation.replace('Home');
-        }
-
+        // Navigate based on role
+        navigation.replace('App', { role: selectedRole });
       } else {
         setErrors({ password: 'Invalid credentials for selected role' });
       }
@@ -82,6 +77,7 @@ const handleLogin = async () => {
   }
 };
 
+// ... (rest of the component remains the same)
 
   return (
     <KeyboardAvoidingView
