@@ -34,6 +34,8 @@ type AdoptionApplication = {
 
 const PetBuyerScreen: React.FC = () => {
   const [pets, setPets] = useState<Pet[]>([]);
+  const [filteredPets, setFilteredPets] = useState<Pet[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showAdoptionForm, setShowAdoptionForm] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
 
@@ -54,7 +56,9 @@ const PetBuyerScreen: React.FC = () => {
       try {
         const storedPets = await AsyncStorage.getItem('pets');
         if (storedPets) {
-          setPets(JSON.parse(storedPets));
+          const parsedPets = JSON.parse(storedPets);
+          setPets(parsedPets);
+          setFilteredPets(parsedPets);
         }
       } catch (error) {
         console.error('Failed to load pets from storage:', error);
@@ -63,6 +67,21 @@ const PetBuyerScreen: React.FC = () => {
 
     loadPets();
   }, []);
+
+  // Search functionality
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredPets(pets);
+    } else {
+      const filtered = pets.filter(pet =>
+        pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.location.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredPets(filtered);
+    }
+  }, [searchQuery, pets]);
 
   const handleApply = (pet: Pet) => {
     setSelectedPet(pet);
@@ -87,13 +106,10 @@ const PetBuyerScreen: React.FC = () => {
         createdAt: new Date().toISOString()
       };
 
-      
       const existingApplications = await AsyncStorage.getItem('applications');
       let applications = existingApplications ? JSON.parse(existingApplications) : [];
       
-     
       applications.push(newApplication);
-      
       
       await AsyncStorage.setItem('applications', JSON.stringify(applications));
 
@@ -251,18 +267,70 @@ const PetBuyerScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Compact Header with Pawfect Match branding */}
       <View style={styles.header}>
-        <Text style={styles.title}>Available Pets for Adoption</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.titleContainer}>
+            <Ionicons name="paw" size={20} color="#5D3FD3" style={styles.pawIcon} />
+            <Text style={styles.appTitle}>Pawfect Match</Text>
+          </View>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Ionicons name="notifications-outline" size={20} color="#5D3FD3" />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>3</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Compact Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={16} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search pets..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <Ionicons name="close-circle" size={16} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Results counter */}
+        {searchQuery.length > 0 && (
+          <Text style={styles.resultsCounter}>
+            {filteredPets.length} pet{filteredPets.length !== 1 ? 's' : ''} found
+          </Text>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {pets.length === 0 ? (
+        {filteredPets.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="paw" size={48} color="#ccc" />
-            <Text style={styles.emptyStateText}>No pets available for adoption</Text>
+            <Text style={styles.emptyStateText}>
+              {searchQuery.length > 0 
+                ? `No pets found matching "${searchQuery}"`
+                : "No pets available for adoption"
+              }
+            </Text>
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <Text style={styles.clearSearchText}>Clear Search</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
-          pets.map((pet) => (
+          filteredPets.map((pet) => (
             <View key={pet.id} style={styles.card}>
               <Image
                 source={{ uri: pet.images[0] || 'https://via.placeholder.com/150' }} 
@@ -300,18 +368,85 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f4ff',
   },
   header: {
-    paddingTop: 20,
+    backgroundColor: '#fff',
+    paddingTop: 10,
     paddingHorizontal: 16,
     paddingBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  title: {
-    fontSize: 24,
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pawIcon: {
+    marginRight: 6,
+  },
+  appTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#5D3FD3',
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 4,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    paddingVertical: 2,
+  },
+  clearButton: {
+    padding: 2,
+  },
+  resultsCounter: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   scroll: {
     paddingHorizontal: 16,
     paddingBottom: 80,
+    paddingTop: 8,
   },
   card: {
     backgroundColor: '#fff',
@@ -383,6 +518,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#999',
     marginTop: 12,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  clearSearchButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#5D3FD3',
+    borderRadius: 8,
+  },
+  clearSearchText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   applyButton: {
     marginTop: 10,
