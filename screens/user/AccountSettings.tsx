@@ -14,13 +14,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../../contexts/UserContext'; // adjust path as needed
+
 
 interface UserProfile {
   name: string;
   email: string;
-  phone: string;
   address: string;
-  memberSince: string;
   adoptedPets: number;
   avatar?: string;
 }
@@ -34,16 +34,14 @@ interface NotificationSettings {
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
-  
+    const { user } = useUser();
   // User profile state
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'John Doe',
-    email: 'john.doe@email.com',
-    phone: '+1 (555) 123-4567',
+  const userProfile = {
+    name: user?.name || 'Unknown',
+    email: user?.email || 'unknown@example.com',
     address: '123 Main St, New York, NY 10001',
-    memberSince: 'January 2024',
     adoptedPets: 2,
-  });
+  };
 
   // Notification settings state
   const [notifications, setNotifications] = useState<NotificationSettings>({
@@ -222,17 +220,7 @@ const ProfileScreen = () => {
               keyboardType="email-address"
             />
           </View>
-          
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Phone</Text>
-            <TextInput
-              style={styles.formInput}
-              value={editForm.phone}
-              onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
-              placeholder="Enter your phone number"
-              keyboardType="phone-pad"
-            />
-          </View>
+        
           
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Address</Text>

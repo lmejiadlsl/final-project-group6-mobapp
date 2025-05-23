@@ -7,7 +7,7 @@ import ForgotPasswordScreen from './screens/auth/ForgotPasswordScreen';
 import LoginScreen from './screens/auth/LoginScreen';
 import AppNavigator from './navigation/AppNavigator';
 import SignupScreen from './screens/auth/RegisterScreen';
-
+import { UserProvider } from './contexts/UserContext';
 export type RootStackParamList = {
   Login: undefined;
   Register: { initialRole?: 'buyer' | 'seller' | 'admin' };
@@ -19,6 +19,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
+    <UserProvider>
     <PetProvider> {/* Wrap your entire app */}
       <NavigationContainer>
         <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
@@ -30,5 +31,6 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </PetProvider>
+    </UserProvider>
   );
 }
